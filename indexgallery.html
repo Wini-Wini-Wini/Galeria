@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeria Pro - Estilo Apple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        :root {
+            --bg-color: #1E1E1E;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: 20px;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            user-select: none;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        #gallery-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #slider-track {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            /* Relaxed, extremely smooth and sophisticated Apple-style transition */
+            transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+
+        .slide {
+            flex: 0 0 100vw;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8vh 8vw; /* Safe area so image doesn't touch edges */
+        }
+
+        .frame-wrapper {
+            position: relative;
+            display: inline-flex; /* Crucial for shrink-wrapping */
+            padding: 16px; /* Glass margin around the image */
+            border-radius: 24px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.15);
+        }
+
+        /* The image itself dictates the size, capped by viewport */
+        .frame-wrapper img {
+            display: block;
+            /* Max constraints allow perfect scaling without aspect-ratio distortion */
+            max-width: 80vw;
+            max-height: 80vh;
+            width: auto;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        .glow-border {
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            padding: 2px; /* Exact thickness of the bright border */
+            
+            /* The mask ensures the gradient ONLY shows inside the padding area (the border) */
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 20;
+        }
+
+        .glow-spinner {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            /* Bright, thin, focused light */
+            background: conic-gradient(from 0deg, transparent 65%, rgba(255,255,255,0.8) 95%, #ffffff 100%);
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 40;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0;
+            outline: none;
+        }
+
+        #gallery-container:hover .nav-btn,
+        #gallery-container:focus-within .nav-btn {
+            opacity: 1;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-50%) scale(1.08);
+            box-shadow: 0 0 20px rgba(255,255,255,0.25);
+        }
+
+        #prev-btn { left: 2vw; }
+        #next-btn { right: 2vw; }
+
+        .dots-wrapper {
+            position: absolute;
+            bottom: 3vh;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 40;
+            padding: 10px 24px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #gallery-container:hover .dots-wrapper {
+            opacity: 1;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .dot:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+            transform: scale(1.2);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .dot.active {
+            background-color: #ffffff;
+            transform: scale(1.4);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 3vh;
+            right: 3vw;
+            z-index: 50;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            opacity: 0;
+        }
+
+        #gallery-container:hover .settings-btn {
+            opacity: 1;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 640px;
+            max-height: 85vh;
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-modal:hover { color: white; }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .upload-area {
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 36px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .upload-area:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 20px rgba(255,255,255,0.05);
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 16px;
+        }
+
+        .grid-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 14px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(220, 38, 38, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .grid-item:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(220, 38, 38, 1);
+            transform: scale(1.15);
+        }
+
+        #empty-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: opacity 0.4s;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gallery-container">
+        
+        <!-- Settings Gear Icon -->
+        <button class="settings-btn" id="open-settings-btn" aria-label="Gerenciar Imagens">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+        </button>
+
+        <!-- Empty State UI -->
+        <div id="empty-state">
+            <div class="flex flex-col items-center justify-center opacity-40">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <p class="text-sm tracking-widest uppercase font-medium">Sua Galeria</p>
+                <p class="text-xs mt-2 opacity-60">Clique na engrenagem acima para gerenciar</p>
+            </div>
+        </div>
+
+        <!-- Slider Track -->
+        <div id="slider-track"></div>
+
+        <!-- Navigation Arrows -->
+        <button id="prev-btn" class="nav-btn hidden" aria-label="Anterior">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button id="next-btn" class="nav-btn hidden" aria-label="Próxima">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+
+        <!-- Pagination Dots -->
+        <div id="dots-container" class="dots-wrapper hidden"></div>
+
+        <!-- Glassmorphism Settings Modal -->
+        <div class="modal-overlay" id="settings-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Imagens da Galeria</h2>
+                    <button class="close-modal" id="close-settings-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label for="file-upload" class="upload-area block">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-3 opacity-80">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <p class="text-sm font-medium">Fazer Upload de Imagens</p>
+                        <p class="text-xs opacity-50 mt-1">Armazenamento local automático e comprimido</p>
+                    </label>
+                    <input type="file" id="file-upload" multiple accept="image/*" class="hidden">
+
+                    <div class="image-grid" id="modal-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'apple_pro_gallery_data';
+        let imagesData = []; 
+        let currentIndex = 0;
+
+        const sliderTrack = document.getElementById('slider-track');
+        const emptyState = document.getElementById('empty-state');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const dotsContainer = document.getElementById('dots-container');
+        const modal = document.getElementById('settings-modal');
+        const openModalBtn = document.getElementById('open-settings-btn');
+        const closeModalBtn = document.getElementById('close-settings-btn');
+        const fileInput = document.getElementById('file-upload');
+        const modalGrid = document.getElementById('modal-grid');
+
+        function init() {
+            loadFromStorage();
+            renderGallery();
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            openModalBtn.addEventListener('click', () => {
+                renderModalGrid();
+                modal.classList.add('active');
+            });
+            
+            closeModalBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+
+            fileInput.addEventListener('change', handleFileUpload);
+            prevBtn.addEventListener('click', showPrev);
+            nextBtn.addEventListener('click', showNext);
+
+            document.addEventListener('keydown', (e) => {
+                if (modal.classList.contains('active')) return;
+                if (e.key === 'ArrowRight') showNext();
+                if (e.key === 'ArrowLeft') showPrev();
+            });
+        }
+
+        function handleFileUpload(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            let processed = 0;
+            
+            files.forEach(file => {
+                // Compression logic to avoid localStorage limit issues
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_SIZE = 1400; 
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height && width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        } else if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const base64 = canvas.toDataURL('image/webp', 0.85);
+                        imagesData.push(base64);
+                        processed++;
+
+                        if (processed === files.length) {
+                            saveToStorage();
+                            renderModalGrid();
+                            renderGallery();
+                            fileInput.value = ''; 
+                        }
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(imagesData));
+            } catch (e) {
+                if(e.name === 'QuotaExceededError') {
+                    alert("Limite de armazenamento excedido! Remova algumas imagens antigas.");
+                    imagesData.pop(); 
+                }
+            }
+        }
+
+        function loadFromStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    imagesData = JSON.parse(stored);
+                } catch(e) {
+                    imagesData = [];
+                }
+            }
+        }
+
+        window.deleteImage = function(index) {
+            imagesData.splice(index, 1);
+            if (currentIndex >= imagesData.length) {
+                currentIndex = Math.max(0, imagesData.length - 1);
+            }
+            saveToStorage();
+            renderModalGrid();
+            renderGallery();
+        };
+
+        function renderModalGrid() {
+            modalGrid.innerHTML = '';
+            imagesData.forEach((src, index) => {
+                const div = document.createElement('div');
+                div.className = 'grid-item';
+                div.innerHTML = `
+                    <img src="${src}" alt="Thumb">
+                    <button class="delete-btn" title="Remover" onclick="deleteImage(${index})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                `;
+                modalGrid.appendChild(div);
+            });
+        }
+
+        function renderGallery() {
+            if (imagesData.length === 0) {
+                emptyState.style.display = 'flex';
+                setTimeout(() => emptyState.style.opacity = '1', 50);
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                dotsContainer.classList.add('hidden');
+                sliderTrack.innerHTML = '';
+                return;
+            }
+
+            emptyState.style.opacity = '0';
+            setTimeout(() => emptyState.style.display = 'none', 400);
+
+            if (imagesData.length > 1) {
+                prevBtn.classList.remove('hidden');
+                nextBtn.classList.remove('hidden');
+                dotsContainer.classList.remove('hidden');
+            } else {
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                dotsContainer.classList.add('hidden');
+            }
+
+            sliderTrack.innerHTML = '';
+            imagesData.forEach((src) => {
+                const slide = document.createElement('div');
+                slide.className = 'slide';
+                
+                // Flawless Shrink-Wrap HTML Structure
+                slide.innerHTML = `
+                    <div class="frame-wrapper">
+                        <div class="glow-border">
+                            <div class="glow-spinner"></div>
+                        </div>
+                        <img src="${src}" alt="Galeria">
+                    </div>
+                `;
+                sliderTrack.appendChild(slide);
+            });
+
+            renderDots();
+            updateGalleryPosition();
+        }
+
+        function renderDots() {
+            dotsContainer.innerHTML = '';
+            imagesData.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.className = `dot ${i === currentIndex ? 'active' : ''}`;
+                dot.addEventListener('click', () => {
+                    currentIndex = i;
+                    updateGalleryPosition();
+                });
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function updateGalleryPosition() {
+            if (imagesData.length === 0) return;
+            sliderTrack.style.transform = `translateX(-${currentIndex * 100}vw)`;
+
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, i) => {
+                if (i === currentIndex) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        }
+
+        function showNext() {
+            if (imagesData.length <= 1) return;
+            currentIndex = (currentIndex + 1) % imagesData.length;
+            updateGalleryPosition();
+        }
+
+        function showPrev() {
+            if (imagesData.length <= 1) return;
+            currentIndex = (currentIndex - 1 + imagesData.length) % imagesData.length;
+            updateGalleryPosition();
+        }
+
+        init();
+    </script>
+</body>
+</html>
